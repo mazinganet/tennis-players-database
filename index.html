@@ -117,19 +117,59 @@
         }
     </style>
 
+    <!-- Firebase SDK (moved before auth script) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+
     <script>
-        // Password protection system
+        // Password protection system with Firebase sync
         const AuthManager = {
             DEFAULT_PASSWORD: 'tennis2024',
             AUTH_KEY: 'tennis_db_auth',
-            PASSWORD_KEY: 'tennis_db_password',
+            currentPassword: null,
+            dbRef: null,
+            isReady: false,
 
-            getStoredPassword() {
-                return localStorage.getItem(this.PASSWORD_KEY) || this.DEFAULT_PASSWORD;
+            async init() {
+                // Try to connect to Firebase
+                if (typeof firebase !== 'undefined' && firebase.database) {
+                    this.dbRef = firebase.database().ref('settings/password');
+
+                    // Load password from Firebase
+                    try {
+                        const snapshot = await this.dbRef.once('value');
+                        this.currentPassword = snapshot.val() || this.DEFAULT_PASSWORD;
+                        console.log('🔐 Password loaded from Firebase');
+                    } catch (e) {
+                        console.warn('Could not load from Firebase, using default');
+                        this.currentPassword = this.DEFAULT_PASSWORD;
+                    }
+                } else {
+                    // Fallback to localStorage
+                    this.currentPassword = localStorage.getItem('tennis_db_password') || this.DEFAULT_PASSWORD;
+                    console.log('🔐 Using localStorage fallback');
+                }
+
+                this.isReady = true;
+                return this.currentPassword;
             },
 
-            setPassword(newPassword) {
-                localStorage.setItem(this.PASSWORD_KEY, newPassword);
+            async setPassword(newPassword) {
+                this.currentPassword = newPassword;
+
+                if (this.dbRef) {
+                    try {
+                        await this.dbRef.set(newPassword);
+                        console.log('🔐 Password saved to Firebase');
+                    } catch (e) {
+                        console.error('Could not save to Firebase:', e);
+                        // Fallback save to localStorage
+                        localStorage.setItem('tennis_db_password', newPassword);
+                    }
+                } else {
+                    localStorage.setItem('tennis_db_password', newPassword);
+                }
             },
 
             isAuthenticated() {
@@ -141,32 +181,53 @@
             },
 
             checkPassword(password) {
-                return password === this.getStoredPassword();
+                return password === this.currentPassword;
             }
         };
 
-        // Check if already authenticated
-        if (AuthManager.isAuthenticated()) {
-            document.getElementById('loginOverlay').classList.add('hidden');
-        } else {
+        // Initialize auth and handle login
+        (async function () {
+            const loginOverlay = document.getElementById('loginOverlay');
+            const loginForm = document.getElementById('loginForm');
+            const loginError = document.getElementById('loginError');
+            const passwordInput = document.getElementById('password');
+
+            // Check if already authenticated
+            if (AuthManager.isAuthenticated()) {
+                loginOverlay.classList.add('hidden');
+                await AuthManager.init(); // Still init for settings
+                return;
+            }
+
+            // Show loading state
+            passwordInput.placeholder = 'Caricamento...';
+            passwordInput.disabled = true;
+
+            // Initialize auth manager (loads password from Firebase)
+            await AuthManager.init();
+
+            // Enable form
+            passwordInput.placeholder = 'Inserisci la password...';
+            passwordInput.disabled = false;
+            passwordInput.focus();
+
             // Handle login form
-            document.getElementById('loginForm').addEventListener('submit', function (e) {
+            loginForm.addEventListener('submit', function (e) {
                 e.preventDefault();
-                const password = document.getElementById('password').value;
-                const errorEl = document.getElementById('loginError');
+                const password = passwordInput.value;
 
                 if (AuthManager.checkPassword(password)) {
                     AuthManager.authenticate();
-                    document.getElementById('loginOverlay').classList.add('hidden');
+                    loginOverlay.classList.add('hidden');
                 } else {
-                    errorEl.textContent = '❌ Password errata. Riprova.';
-                    document.getElementById('password').value = '';
-                    document.getElementById('password').focus();
+                    loginError.textContent = '❌ Password errata. Riprova.';
+                    passwordInput.value = '';
+                    passwordInput.focus();
                 }
             });
-        }
+        })();
 
-        // Settings modal handlers (attached after DOM loads)
+        // Settings modal handlers
         document.addEventListener('DOMContentLoaded', function () {
             const settingsModal = document.getElementById('settingsModal');
             const settingsForm = document.getElementById('settingsForm');
@@ -176,6 +237,7 @@
             document.getElementById('btnSettings').addEventListener('click', function () {
                 settingsForm.reset();
                 settingsError.textContent = '';
+                settingsError.className = 'settings-error';
                 settingsModal.classList.add('active');
             });
 
@@ -188,7 +250,7 @@
             });
 
             // Handle password change
-            settingsForm.addEventListener('submit', function (e) {
+            settingsForm.addEventListener('submit', async function (e) {
                 e.preventDefault();
 
                 const currentPassword = document.getElementById('currentPassword').value;
@@ -213,8 +275,10 @@
                     return;
                 }
 
-                // Save new password
-                AuthManager.setPassword(newPassword);
+                // Save new password to Firebase
+                settingsError.textContent = '⏳ Salvataggio...';
+                await AuthManager.setPassword(newPassword);
+
                 settingsError.className = 'settings-error settings-success';
                 settingsError.textContent = '✅ Password cambiata con successo!';
 
@@ -547,12 +611,6 @@
         <span class="toast-icon"></span>
         <span class="toast-message"></span>
     </div>
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
-    <!-- Firebase Configuration -->
-    <script src="firebase-config.js"></script>
 
     <script src="app.js"></script>
 </body>
