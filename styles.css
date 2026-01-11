@@ -172,6 +172,16 @@ body {
     background-clip: text;
 }
 
+.header-actions {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+}
+
+.header-actions a.btn {
+    text-decoration: none;
+}
+
 /* Main Content */
 .main-content {
     flex: 1;

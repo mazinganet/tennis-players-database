@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎾 Cerca Giocatori Disponibili</title>
+    <meta name="description" content="Cerca giocatori di tennis disponibili per giorno e orario">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Search Page Specific Styles */
+        .search-page {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary-50) 0%, var(--gray-100) 50%, var(--primary-100) 100%);
+            background-attachment: fixed;
+        }
+
+        .search-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--space-xl);
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-xl);
+            flex-wrap: wrap;
+            gap: var(--space-md);
+        }
+
+        .page-header h1 {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-size: var(--font-size-2xl);
+            color: var(--gray-800);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-xs);
+            color: var(--primary-600);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color var(--transition-fast);
+        }
+
+        .back-link:hover {
+            color: var(--primary-700);
+        }
+
+        /* Search Form */
+        .search-form {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--glass-border);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-xl);
+            box-shadow: var(--shadow-md);
+        }
+
+        .search-form h2 {
+            font-size: var(--font-size-lg);
+            margin-bottom: var(--space-md);
+            color: var(--gray-700);
+        }
+
+        .search-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-md);
+            align-items: flex-end;
+        }
+
+        .search-field {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-xs);
+        }
+
+        .search-field label {
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            color: var(--gray-600);
+        }
+
+        .search-field select,
+        .search-field input[type="time"] {
+            padding: var(--space-sm) var(--space-md);
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-base);
+            font-family: inherit;
+            background: white;
+            min-width: 150px;
+        }
+
+        .search-field select:focus,
+        .search-field input:focus {
+            outline: none;
+            border-color: var(--primary-400);
+            box-shadow: 0 0 0 3px rgba(0, 180, 161, 0.15);
+        }
+
+        .btn-search {
+            padding: var(--space-sm) var(--space-xl);
+            height: fit-content;
+        }
+
+        /* Results Grid */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--space-lg);
+        }
+
+        @media (max-width: 1200px) {
+            .results-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Level Box */
+        .level-box {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .level-box-header {
+            padding: var(--space-md) var(--space-lg);
+            color: white;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .level-box-header .count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-sm);
+        }
+
+        .level-box.principiante .level-box-header {
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+        }
+
+        .level-box.intermedio .level-box-header {
+            background: linear-gradient(135deg, #10b981, #34d399);
+        }
+
+        .level-box.avanzato .level-box-header {
+            background: linear-gradient(135deg, #f97316, #fb923c);
+        }
+
+        .level-box.agonista .level-box-header {
+            background: linear-gradient(135deg, #ef4444, #f87171);
+        }
+
+        .level-box-content {
+            padding: var(--space-md);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-sm) var(--space-md);
+            background: var(--gray-50);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .player-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .player-item:hover {
+            background: var(--primary-50);
+            transform: translateX(4px);
+        }
+
+        .player-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .player-item-name {
+            font-weight: 500;
+            color: var(--gray-800);
+        }
+
+        .player-item-phone {
+            font-size: var(--font-size-sm);
+            color: var(--gray-500);
+        }
+
+        .player-item-phone a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .player-item-phone a:hover {
+            color: var(--primary-500);
+        }
+
+        .player-item-availability {
+            font-size: var(--font-size-xs);
+            color: var(--gray-400);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .player-item-availability .time-tag {
+            background: var(--primary-50);
+            color: var(--primary-700);
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+        }
+
+        .no-availability {
+            font-size: var(--font-size-xs);
+            color: var(--warning);
+            font-style: italic;
+        }
+
+        .empty-box {
+            text-align: center;
+            color: var(--gray-400);
+            padding: var(--space-lg);
+            font-style: italic;
+        }
+
+        /* Search Summary */
+        .search-summary {
+            background: var(--primary-50);
+            border: 1px solid var(--primary-200);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            margin-bottom: var(--space-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+        }
+
+        .search-summary-text {
+            color: var(--primary-800);
+            font-weight: 500;
+        }
+
+        .search-summary-count {
+            background: var(--primary-500);
+            color: white;
+            padding: var(--space-xs) var(--space-md);
+            border-radius: var(--radius-full);
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body class="search-page">
+    <div class="search-container">
+        <!-- Page Header -->
+        <header class="page-header">
+            <h1>🔍 Cerca Giocatori Disponibili</h1>
+            <a href="index.html" class="back-link">← Torna al Database</a>
+        </header>
+
+        <!-- Search Form -->
+        <div class="search-form">
+            <h2>📅 Seleziona giorno e orario</h2>
+            <div class="search-controls">
+                <div class="search-field">
+                    <label for="searchDay">Giorno</label>
+                    <select id="searchDay">
+                        <option value="">Tutti i giorni</option>
+                        <option value="lunedi">Lunedì</option>
+                        <option value="martedi">Martedì</option>
+                        <option value="mercoledi">Mercoledì</option>
+                        <option value="giovedi">Giovedì</option>
+                        <option value="venerdi">Venerdì</option>
+                        <option value="sabato">Sabato</option>
+                        <option value="domenica">Domenica</option>
+                    </select>
+                </div>
+                <div class="search-field">
+                    <label for="searchTimeStart">Ora inizio</label>
+                    <input type="time" id="searchTimeStart" value="09:00">
+                </div>
+                <div class="search-field">
+                    <label for="searchTimeEnd">Ora fine</label>
+                    <input type="time" id="searchTimeEnd" value="18:00">
+                </div>
+                <button class="btn btn-primary btn-search" id="btnSearch">
+                    🔍 Cerca
+                </button>
+            </div>
+        </div>
+
+        <!-- Search Summary -->
+        <div class="search-summary" id="searchSummary" style="display: none;">
+            <span class="search-summary-text" id="summaryText"></span>
+            <span class="search-summary-count" id="summaryCount"></span>
+        </div>
+
+        <!-- Results Grid -->
+        <div class="results-grid">
+            <!-- Principianti -->
+            <div class="level-box principiante">
+                <div class="level-box-header">
+                    <span>🎾 Principianti</span>
+                    <span class="count" id="countPrincipiante">0</span>
+                </div>
+                <div class="level-box-content" id="listPrincipiante">
+                    <div class="empty-box">Nessun giocatore trovato</div>
+                </div>
+            </div>
+
+            <!-- Intermedi -->
+            <div class="level-box intermedio">
+                <div class="level-box-header">
+                    <span>🎾 Intermedi</span>
+                    <span class="count" id="countIntermedio">0</span>
+                </div>
+                <div class="level-box-content" id="listIntermedio">
+                    <div class="empty-box">Nessun giocatore trovato</div>
+                </div>
+            </div>
+
+            <!-- Avanzati -->
+            <div class="level-box avanzato">
+                <div class="level-box-header">
+                    <span>🎾 Avanzati</span>
+                    <span class="count" id="countAvanzato">0</span>
+                </div>
+                <div class="level-box-content" id="listAvanzato">
+                    <div class="empty-box">Nessun giocatore trovato</div>
+                </div>
+            </div>
+
+            <!-- Agonisti -->
+            <div class="level-box agonista">
+                <div class="level-box-header">
+                    <span>🎾 Agonisti</span>
+                    <span class="count" id="countAgonista">0</span>
+                </div>
+                <div class="level-box-content" id="listAgonista">
+                    <div class="empty-box">Nessun giocatore trovato</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <!-- Firebase Configuration -->
+    <script src="firebase-config.js"></script>
+
+    <script>
+        const SearchApp = {
+            players: [],
+            dbRef: null,
+
+            days: {
+                'lunedi': 'Lunedì',
+                'martedi': 'Martedì',
+                'mercoledi': 'Mercoledì',
+                'giovedi': 'Giovedì',
+                'venerdi': 'Venerdì',
+                'sabato': 'Sabato',
+                'domenica': 'Domenica'
+            },
+
+            init() {
+                if (typeof firebase !== 'undefined' && firebase.database) {
+                    this.dbRef = firebase.database().ref('players');
+                    this.loadPlayers();
+                } else {
+                    this.loadFromStorage();
+                    this.performSearch();
+                }
+
+                this.bindEvents();
+                console.log('🔍 Search page initialized');
+            },
+
+            loadPlayers() {
+                this.dbRef.on('value', (snapshot) => {
+                    this.players = [];
+                    snapshot.forEach((childSnapshot) => {
+                        const player = childSnapshot.val();
+                        player.id = childSnapshot.key;
+                        this.players.push(player);
+                    });
+                    this.players.sort((a, b) => a.cognome.localeCompare(b.cognome));
+                    this.performSearch();
+                });
+            },
+
+            loadFromStorage() {
+                const stored = localStorage.getItem('tennis_players');
+                if (stored) {
+                    try {
+                        this.players = JSON.parse(stored);
+                    } catch (e) {
+                        this.players = [];
+                    }
+                }
+            },
+
+            bindEvents() {
+                document.getElementById('btnSearch').addEventListener('click', () => this.performSearch());
+                document.getElementById('searchDay').addEventListener('change', () => this.performSearch());
+                document.getElementById('searchTimeStart').addEventListener('change', () => this.performSearch());
+                document.getElementById('searchTimeEnd').addEventListener('change', () => this.performSearch());
+            },
+
+            performSearch() {
+                const day = document.getElementById('searchDay').value;
+                const timeStart = document.getElementById('searchTimeStart').value;
+                const timeEnd = document.getElementById('searchTimeEnd').value;
+
+                // Filter players by availability
+                const results = {
+                    principiante: [],
+                    intermedio: [],
+                    avanzato: [],
+                    agonista: []
+                };
+
+                this.players.forEach(player => {
+                    const level = player.livello;
+                    if (!results[level]) return;
+
+                    // Check if player has no availability (include them always)
+                    const hasNoAvailability = !player.disponibilita || player.disponibilita.length === 0;
+
+                    if (hasNoAvailability) {
+                        // Include players with no availability info
+                        results[level].push({
+                            ...player,
+                            matchingSlots: [],
+                            noAvailability: true
+                        });
+                    } else {
+                        // Check if any availability slot matches
+                        const matchingSlots = player.disponibilita.filter(slot => {
+                            // If no day filter, check all days
+                            if (day && slot.giorno !== day) return false;
+
+                            // Check time overlap
+                            // Player is available if their slot overlaps with search range
+                            const slotStart = slot.oraInizio;
+                            const slotEnd = slot.oraFine;
+
+                            // Overlap check: slot overlaps if it starts before search ends AND ends after search starts
+                            if (timeStart && timeEnd) {
+                                return slotStart < timeEnd && slotEnd > timeStart;
+                            }
+
+                            return true;
+                        });
+
+                        if (matchingSlots.length > 0 || !day) {
+                            results[level].push({
+                                ...player,
+                                matchingSlots: matchingSlots
+                            });
+                        }
+                    }
+                });
+
+                this.renderResults(results, day, timeStart, timeEnd);
+            },
+
+            renderResults(results, day, timeStart, timeEnd) {
+                const levels = ['principiante', 'intermedio', 'avanzato', 'agonista'];
+                let totalCount = 0;
+
+                levels.forEach(level => {
+                    const list = document.getElementById(`list${this.capitalize(level)}`);
+                    const count = document.getElementById(`count${this.capitalize(level)}`);
+                    const players = results[level];
+
+                    count.textContent = players.length;
+                    totalCount += players.length;
+
+                    if (players.length === 0) {
+                        list.innerHTML = '<div class="empty-box">Nessun giocatore trovato</div>';
+                    } else {
+                        list.innerHTML = players.map(player => this.renderPlayerItem(player, day)).join('');
+                    }
+                });
+
+                // Update summary
+                const summary = document.getElementById('searchSummary');
+                const summaryText = document.getElementById('summaryText');
+                const summaryCount = document.getElementById('summaryCount');
+
+                let searchDesc = 'Tutti i giocatori';
+                if (day) {
+                    searchDesc = `${this.days[day]}`;
+                    if (timeStart && timeEnd) {
+                        searchDesc += ` dalle ${timeStart} alle ${timeEnd}`;
+                    }
+                }
+
+                summaryText.textContent = searchDesc;
+                summaryCount.textContent = `${totalCount} giocatori`;
+                summary.style.display = 'flex';
+            },
+
+            renderPlayerItem(player, filterDay) {
+                let availabilityHtml = '';
+
+                if (player.noAvailability) {
+                    availabilityHtml = '<span class="no-availability">⚠️ Nessuna disponibilità indicata</span>';
+                } else if (player.matchingSlots && player.matchingSlots.length > 0) {
+                    availabilityHtml = '<div class="player-item-availability">' +
+                        player.matchingSlots.map(slot =>
+                            `<span class="time-tag">${filterDay ? '' : this.days[slot.giorno].substring(0, 3) + ' '}${slot.oraInizio}-${slot.oraFine}</span>`
+                        ).join('') + '</div>';
+                }
+
+                return `
+                    <div class="player-item">
+                        <div class="player-item-info">
+                            <span class="player-item-name">${player.cognome} ${player.nome}</span>
+                            <span class="player-item-phone">📞 <a href="tel:${player.telefono}">${player.telefono}</a></span>
+                            ${availabilityHtml}
+                        </div>
+                    </div>
+                `;
+            },
+
+            capitalize(str) {
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => SearchApp.init());
+    </script>
+</body>
+
+</html>
