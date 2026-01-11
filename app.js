@@ -9,7 +9,6 @@ const App = {
     filteredPlayers: [],
     currentEditId: null,
     currentDeleteId: null,
-    filterEmpathy: 0,
     isListView: false,
     dbRef: null,
 
@@ -185,11 +184,9 @@ const App = {
         // Availability
         document.getElementById('btnAddAvailability').addEventListener('click', () => this.addAvailabilitySlot());
 
-        // Star Rating in Form
-        this.bindStarRating();
-
         // Filter Events
         document.getElementById('searchInput').addEventListener('input', () => this.applyFilters());
+        document.getElementById('preferenceSearch').addEventListener('input', () => this.applyFilters());
         document.querySelectorAll('input[name="level"]').forEach(cb => {
             cb.addEventListener('change', () => this.applyFilters());
         });
@@ -198,9 +195,6 @@ const App = {
         });
         document.getElementById('filterTimeStart').addEventListener('change', () => this.applyFilters());
         document.getElementById('filterTimeEnd').addEventListener('change', () => this.applyFilters());
-
-        // Empathy Filter Stars
-        this.bindEmpathyFilter();
 
         // Reset Filters
         document.getElementById('btnResetFilters').addEventListener('click', () => this.resetFilters());
@@ -229,70 +223,6 @@ const App = {
         });
     },
 
-    bindStarRating() {
-        const stars = document.querySelectorAll('#empathyRating .star');
-        stars.forEach(star => {
-            star.addEventListener('click', () => {
-                const value = parseInt(star.dataset.value);
-                document.getElementById('empatia').value = value;
-                this.updateStarDisplay(stars, value);
-            });
-            star.addEventListener('mouseenter', () => {
-                const value = parseInt(star.dataset.value);
-                this.updateStarDisplay(stars, value, true);
-            });
-        });
-
-        document.getElementById('empathyRating').addEventListener('mouseleave', () => {
-            const currentValue = parseInt(document.getElementById('empatia').value) || 0;
-            this.updateStarDisplay(stars, currentValue);
-        });
-    },
-
-    bindEmpathyFilter() {
-        const stars = document.querySelectorAll('#empathyFilter .star');
-        stars.forEach(star => {
-            star.addEventListener('click', () => {
-                const value = parseInt(star.dataset.value);
-                // Toggle off if clicking the same value
-                if (this.filterEmpathy === value) {
-                    this.filterEmpathy = 0;
-                } else {
-                    this.filterEmpathy = value;
-                }
-                this.updateFilterStars();
-                this.applyFilters();
-            });
-        });
-    },
-
-    updateStarDisplay(stars, value, isHover = false) {
-        stars.forEach(star => {
-            const starValue = parseInt(star.dataset.value);
-            if (starValue <= value) {
-                star.classList.add('active');
-            } else {
-                star.classList.remove('active');
-            }
-        });
-    },
-
-    updateFilterStars() {
-        const stars = document.querySelectorAll('#empathyFilter .star');
-        const valueEl = document.getElementById('empathyValue');
-
-        stars.forEach(star => {
-            const starValue = parseInt(star.dataset.value);
-            if (starValue <= this.filterEmpathy) {
-                star.classList.add('active');
-            } else {
-                star.classList.remove('active');
-            }
-        });
-
-        valueEl.textContent = this.filterEmpathy > 0 ? `${this.filterEmpathy}+ stelle` : 'Tutti';
-    },
-
     // ========================================
     // MODAL HANDLING
     // ========================================
@@ -302,8 +232,6 @@ const App = {
         const form = document.getElementById('playerForm');
 
         form.reset();
-        document.getElementById('empatia').value = '0';
-        this.updateStarDisplay(document.querySelectorAll('#empathyRating .star'), 0);
         document.getElementById('availabilityList').innerHTML = '';
 
         if (player) {
@@ -315,8 +243,8 @@ const App = {
             document.getElementById('nome').value = player.nome;
             document.getElementById('telefono').value = player.telefono;
             document.getElementById('livello').value = player.livello;
-            document.getElementById('empatia').value = player.empatia;
-            this.updateStarDisplay(document.querySelectorAll('#empathyRating .star'), player.empatia);
+            document.getElementById('giocatoriPreferiti').value = player.giocatoriPreferiti || '';
+            document.getElementById('giocatoriIndesiderati').value = player.giocatoriIndesiderati || '';
 
             // Load availability slots
             if (player.disponibilita && player.disponibilita.length > 0) {
@@ -405,12 +333,6 @@ const App = {
     async handleSubmit(e) {
         e.preventDefault();
 
-        const empatia = parseInt(document.getElementById('empatia').value);
-        if (empatia < 1 || empatia > 5) {
-            this.showToast('Seleziona il livello di empatia (1-5 stelle)', 'error');
-            return;
-        }
-
         const disponibilita = this.getAvailabilityFromForm();
 
         const playerData = {
@@ -418,7 +340,8 @@ const App = {
             nome: document.getElementById('nome').value.trim(),
             telefono: document.getElementById('telefono').value.trim(),
             livello: document.getElementById('livello').value,
-            empatia: empatia,
+            giocatoriPreferiti: document.getElementById('giocatoriPreferiti').value.trim(),
+            giocatoriIndesiderati: document.getElementById('giocatoriIndesiderati').value.trim(),
             disponibilita: disponibilita,
             updatedAt: new Date().toISOString()
         };
@@ -500,6 +423,7 @@ const App = {
     // ========================================
     applyFilters() {
         const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+        const preferenceSearch = document.getElementById('preferenceSearch').value.toLowerCase().trim();
 
         const selectedLevels = Array.from(document.querySelectorAll('input[name="level"]:checked'))
             .map(cb => cb.value);
@@ -519,13 +443,17 @@ const App = {
                 }
             }
 
-            // Level filter
-            if (selectedLevels.length > 0 && !selectedLevels.includes(player.livello)) {
-                return false;
+            // Preference search filter (search in preferred and unwanted players)
+            if (preferenceSearch) {
+                const preferred = (player.giocatoriPreferiti || '').toLowerCase();
+                const unwanted = (player.giocatoriIndesiderati || '').toLowerCase();
+                if (!preferred.includes(preferenceSearch) && !unwanted.includes(preferenceSearch)) {
+                    return false;
+                }
             }
 
-            // Empathy filter
-            if (this.filterEmpathy > 0 && player.empatia < this.filterEmpathy) {
+            // Level filter
+            if (selectedLevels.length > 0 && !selectedLevels.includes(player.livello)) {
                 return false;
             }
 
@@ -558,12 +486,11 @@ const App = {
 
     resetFilters() {
         document.getElementById('searchInput').value = '';
+        document.getElementById('preferenceSearch').value = '';
         document.querySelectorAll('input[name="level"]').forEach(cb => cb.checked = false);
         document.querySelectorAll('input[name="day"]').forEach(cb => cb.checked = false);
         document.getElementById('filterTimeStart').value = '';
         document.getElementById('filterTimeEnd').value = '';
-        this.filterEmpathy = 0;
-        this.updateFilterStars();
         this.applyFilters();
     },
 
@@ -593,9 +520,9 @@ const App = {
         // Use filtered players or all players
         const playersToShow = this.filteredPlayers.length > 0 ||
             document.getElementById('searchInput').value ||
+            document.getElementById('preferenceSearch').value ||
             document.querySelectorAll('input[name="level"]:checked').length > 0 ||
             document.querySelectorAll('input[name="day"]:checked').length > 0 ||
-            this.filterEmpathy > 0 ||
             document.getElementById('filterTimeStart').value ||
             document.getElementById('filterTimeEnd').value
             ? this.filteredPlayers
@@ -625,21 +552,38 @@ const App = {
     renderPlayerCard(player) {
         const levelInfo = this.levels[player.livello] || { label: player.livello, class: '' };
 
-        // Render empathy stars
-        let stars = '';
-        for (let i = 1; i <= 5; i++) {
-            stars += `<span class="star ${i <= player.empatia ? '' : 'inactive'}">★</span>`;
+        // Render player preferences
+        let preferencesHtml = '';
+        if (player.giocatoriPreferiti || player.giocatoriIndesiderati) {
+            preferencesHtml = '<div class="player-preferences">';
+            if (player.giocatoriPreferiti) {
+                preferencesHtml += `
+                    <div class="preference-item preferred">
+                        <span class="icon">👍</span>
+                        <span class="names">${player.giocatoriPreferiti}</span>
+                    </div>
+                `;
+            }
+            if (player.giocatoriIndesiderati) {
+                preferencesHtml += `
+                    <div class="preference-item unwanted">
+                        <span class="icon">👎</span>
+                        <span class="names">${player.giocatoriIndesiderati}</span>
+                    </div>
+                `;
+            }
+            preferencesHtml += '</div>';
         }
 
         // Render availability tags
         let availabilityHtml = '';
         if (player.disponibilita && player.disponibilita.length > 0) {
-            availabilityHtml = player.disponibilita.map(slot => `
+            availabilityHtml = '<div class="availability-preview">' + player.disponibilita.map(slot => `
                 <span class="availability-tag">
                     <span class="day-short">${this.getDayShort(slot.giorno)}</span>
                     ${slot.oraInizio}-${slot.oraFine}
                 </span>
-            `).join('');
+            `).join('') + '</div>';
         }
 
         return `
@@ -660,11 +604,9 @@ const App = {
                     <span class="player-level">
                         <span class="level-badge ${levelInfo.class}">${levelInfo.label}</span>
                     </span>
-                    <div class="player-empathy">
-                        ${stars}
-                    </div>
                 </div>
-                ${availabilityHtml ? `<div class="availability-preview">${availabilityHtml}</div>` : ''}
+                ${preferencesHtml}
+                ${availabilityHtml}
             </div>
         `;
     }
