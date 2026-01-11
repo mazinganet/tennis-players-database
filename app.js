@@ -813,6 +813,19 @@ const App = {
             `).join('') + '</div>';
         }
 
+        // Render unavailable days
+        let unavailableHtml = '';
+        if (player.giorniNonDisponibili && player.giorniNonDisponibili.length > 0) {
+            unavailableHtml = `
+                <div class="unavailable-preview" style="margin-top: 8px; color: var(--danger); font-size: 0.85rem; display: flex; align-items: center; gap: 4px;">
+                    <span>🚫 Non disponibile:</span>
+                    <span style="font-weight: 500;">
+                        ${player.giorniNonDisponibili.map(day => this.getDayShort(day)).join(', ')}
+                    </span>
+                </div>
+            `;
+        }
+
         return `
             <div class="player-card" data-id="${player.id}">
                 <div class="player-header">
@@ -834,6 +847,7 @@ const App = {
                 </div>
                 ${preferencesHtml}
                 ${availabilityHtml}
+                ${unavailableHtml}
             </div>
         `;
     }
