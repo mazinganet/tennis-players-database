@@ -190,8 +190,8 @@ const App = {
         document.getElementById('btnCancelDelete').addEventListener('click', () => this.closeDeleteModal());
         document.getElementById('btnConfirmDelete').addEventListener('click', () => this.confirmDelete());
 
-        // Availability
-        document.getElementById('btnAddAvailability').addEventListener('click', () => this.addAvailabilitySlot());
+        // Initialize time selects when DOM is loaded
+        this.initTimeSelects();
 
         // Player Preferences
         document.getElementById('btnAddPreferred').addEventListener('click', () => this.addToPreferred());
@@ -348,7 +348,7 @@ const App = {
         const form = document.getElementById('playerForm');
 
         form.reset();
-        document.getElementById('availabilityList').innerHTML = '';
+        this.resetAvailabilityForm();
 
         // Reset preference lists
         this.preferredPlayerIds = [];
@@ -368,12 +368,8 @@ const App = {
             this.preferredPlayerIds = player.giocatoriPreferiti || [];
             this.unwantedPlayerIds = player.giocatoriIndesiderati || [];
 
-            // Load availability slots
-            if (player.disponibilita && player.disponibilita.length > 0) {
-                player.disponibilita.forEach(slot => {
-                    this.addAvailabilitySlot(slot);
-                });
-            }
+            // Load availability
+            this.loadAvailabilityToForm(player);
         } else {
             // New mode
             this.currentEditId = null;
@@ -411,48 +407,78 @@ const App = {
     // ========================================
     // AVAILABILITY MANAGEMENT
     // ========================================
-    addAvailabilitySlot(data = null) {
-        const list = document.getElementById('availabilityList');
-        const slot = document.createElement('div');
-        slot.className = 'availability-slot';
+    initTimeSelects() {
+        const times = [];
+        for (let hour = 8; hour <= 22; hour++) {
+            times.push(`${hour.toString().padStart(2, '0')}:00`);
+        }
 
-        const dayOptions = this.days.map(d =>
-            `<option value="${d.value}" ${data && data.giorno === d.value ? 'selected' : ''}>${d.label}</option>`
-        ).join('');
+        document.querySelectorAll('.time-select').forEach(select => {
+            const isStart = select.id.includes('_start');
+            const defaultValue = isStart ? '08:00' : '22:00';
 
-        slot.innerHTML = `
-            <select class="slot-day" required>
-                <option value="">Giorno...</option>
-                ${dayOptions}
-            </select>
-            <input type="time" class="slot-start" value="${data ? data.oraInizio : ''}" required>
-            <span class="slot-separator">—</span>
-            <input type="time" class="slot-end" value="${data ? data.oraFine : ''}" required>
-            <button type="button" class="btn-remove-slot" title="Rimuovi">×</button>
-        `;
-
-        slot.querySelector('.btn-remove-slot').addEventListener('click', () => {
-            slot.remove();
+            select.innerHTML = times.map(time =>
+                `<option value="${time}" ${time === defaultValue ? 'selected' : ''}>${time}</option>`
+            ).join('');
         });
+    },
 
-        list.appendChild(slot);
+    resetAvailabilityForm() {
+        document.querySelectorAll('#availableDaysGrid input[type="checkbox"]').forEach(cb => {
+            cb.checked = false;
+        });
+        document.querySelectorAll('#unavailableDaysGrid input[type="checkbox"]').forEach(cb => {
+            cb.checked = false;
+        });
+        this.initTimeSelects();
+    },
+
+    loadAvailabilityToForm(player) {
+        if (player.disponibilita && player.disponibilita.length > 0) {
+            player.disponibilita.forEach(slot => {
+                const checkbox = document.getElementById(`avail_${slot.giorno}`);
+                if (checkbox) checkbox.checked = true;
+
+                const startSelect = document.getElementById(`avail_${slot.giorno}_start`);
+                const endSelect = document.getElementById(`avail_${slot.giorno}_end`);
+
+                if (startSelect && slot.oraInizio) startSelect.value = slot.oraInizio;
+                if (endSelect && slot.oraFine) endSelect.value = slot.oraFine;
+            });
+        }
+
+        if (player.giorniNonDisponibili && player.giorniNonDisponibili.length > 0) {
+            player.giorniNonDisponibili.forEach(day => {
+                const checkbox = document.getElementById(`unavail_${day}`);
+                if (checkbox) checkbox.checked = true;
+            });
+        }
     },
 
     getAvailabilityFromForm() {
-        const slots = document.querySelectorAll('#availabilityList .availability-slot');
         const availability = [];
 
-        slots.forEach(slot => {
-            const giorno = slot.querySelector('.slot-day').value;
-            const oraInizio = slot.querySelector('.slot-start').value;
-            const oraFine = slot.querySelector('.slot-end').value;
+        document.querySelectorAll('#availableDaysGrid input[type="checkbox"]:checked').forEach(checkbox => {
+            const day = checkbox.dataset.day;
+            const startSelect = document.getElementById(`avail_${day}_start`);
+            const endSelect = document.getElementById(`avail_${day}_end`);
 
-            if (giorno && oraInizio && oraFine) {
-                availability.push({ giorno, oraInizio, oraFine });
-            }
+            availability.push({
+                giorno: day,
+                oraInizio: startSelect ? startSelect.value : '08:00',
+                oraFine: endSelect ? endSelect.value : '22:00'
+            });
         });
 
         return availability;
+    },
+
+    getUnavailableDaysFromForm() {
+        const unavailableDays = [];
+        document.querySelectorAll('#unavailableDaysGrid input[type="checkbox"]:checked').forEach(checkbox => {
+            unavailableDays.push(checkbox.dataset.day);
+        });
+        return unavailableDays;
     },
 
     // ========================================
@@ -462,6 +488,7 @@ const App = {
         e.preventDefault();
 
         const disponibilita = this.getAvailabilityFromForm();
+        const giorniNonDisponibili = this.getUnavailableDaysFromForm();
 
         const playerData = {
             cognome: document.getElementById('cognome').value.trim(),
@@ -471,6 +498,7 @@ const App = {
             giocatoriPreferiti: [...this.preferredPlayerIds],
             giocatoriIndesiderati: [...this.unwantedPlayerIds],
             disponibilita: disponibilita,
+            giorniNonDisponibili: giorniNonDisponibili,
             updatedAt: new Date().toISOString()
         };
 

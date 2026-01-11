@@ -526,14 +526,153 @@
                     </div>
                 </div>
 
+                <!-- Available Days Section -->
                 <div class="form-group availability-section">
-                    <label>Disponibilità oraria</label>
-                    <div class="availability-list" id="availabilityList">
-                        <!-- Availability slots will be added here -->
+                    <label>✅ Giorni e orari disponibili</label>
+                    <p class="text-muted">Seleziona i giorni in cui puoi giocare e l'orario</p>
+                    <div class="days-grid" id="availableDaysGrid">
+                        <div class="day-item">
+                            <label class="day-checkbox">
+                                <input type="checkbox" id="avail_lunedi" data-day="lunedi">
+                                <span class="day-name">Lunedì</span>
+                            </label>
+                            <div class="time-range">
+                                <select id="avail_lunedi_start" class="time-select">
+                                </select>
+                                <span>-</span>
+                                <select id="avail_lunedi_end" class="time-select">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="day-item">
+                            <label class="day-checkbox">
+                                <input type="checkbox" id="avail_martedi" data-day="martedi">
+                                <span class="day-name">Martedì</span>
+                            </label>
+                            <div class="time-range">
+                                <select id="avail_martedi_start" class="time-select">
+                                </select>
+                                <span>-</span>
+                                <select id="avail_martedi_end" class="time-select">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="day-item">
+                            <label class="day-checkbox">
+                                <input type="checkbox" id="avail_mercoledi" data-day="mercoledi">
+                                <span class="day-name">Mercoledì</span>
+                            </label>
+                            <div class="time-range">
+                                <select id="avail_mercoledi_start" class="time-select">
+                                </select>
+                                <span>-</span>
+                                <select id="avail_mercoledi_end" class="time-select">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="day-item">
+                            <label class="day-checkbox">
+                                <input type="checkbox" id="avail_giovedi" data-day="giovedi">
+                                <span class="day-name">Giovedì</span>
+                            </label>
+                            <div class="time-range">
+                                <select id="avail_giovedi_start" class="time-select">
+                                </select>
+                                <span>-</span>
+                                <select id="avail_giovedi_end" class="time-select">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="day-item">
+                            <label class="day-checkbox">
+                                <input type="checkbox" id="avail_venerdi" data-day="venerdi">
+                                <span class="day-name">Venerdì</span>
+                            </label>
+                            <div class="time-range">
+                                <select id="avail_venerdi_start" class="time-select">
+                                </select>
+                                <span>-</span>
+                                <select id="avail_venerdi_end" class="time-select">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="day-item">
+                            <label class="day-checkbox">
+                                <input type="checkbox" id="avail_sabato" data-day="sabato">
+                                <span class="day-name">Sabato</span>
+                            </label>
+                            <div class="time-range">
+                                <select id="avail_sabato_start" class="time-select">
+                                </select>
+                                <span>-</span>
+                                <select id="avail_sabato_end" class="time-select">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="day-item">
+                            <label class="day-checkbox">
+                                <input type="checkbox" id="avail_domenica" data-day="domenica">
+                                <span class="day-name">Domenica</span>
+                            </label>
+                            <div class="time-range">
+                                <select id="avail_domenica_start" class="time-select">
+                                </select>
+                                <span>-</span>
+                                <select id="avail_domenica_end" class="time-select">
+                                </select>
+                            </div>
+                        </div>
                     </div>
-                    <button type="button" class="btn btn-secondary btn-add-availability" id="btnAddAvailability">
-                        + Aggiungi disponibilità
-                    </button>
+                </div>
+
+                <!-- Unavailable Days Section -->
+                <div class="form-group unavailable-section">
+                    <label>🚫 Giorni non disponibili</label>
+                    <p class="text-muted">Seleziona i giorni in cui NON puoi giocare</p>
+                    <div class="days-grid unavailable-grid" id="unavailableDaysGrid">
+                        <div class="day-item unavailable">
+                            <label class="day-checkbox">
+                                <input type="checkbox" id="unavail_lunedi" data-day="lunedi">
+                                <span class="day-name">Lunedì</span>
+                            </label>
+                        </div>
+                        <div class="day-item unavailable">
+                            <label class="day-checkbox">
+                                <input type="checkbox" id="unavail_martedi" data-day="martedi">
+                                <span class="day-name">Martedì</span>
+                            </label>
+                        </div>
+                        <div class="day-item unavailable">
+                            <label class="day-checkbox">
+                                <input type="checkbox" id="unavail_mercoledi" data-day="mercoledi">
+                                <span class="day-name">Mercoledì</span>
+                            </label>
+                        </div>
+                        <div class="day-item unavailable">
+                            <label class="day-checkbox">
+                                <input type="checkbox" id="unavail_giovedi" data-day="giovedi">
+                                <span class="day-name">Giovedì</span>
+                            </label>
+                        </div>
+                        <div class="day-item unavailable">
+                            <label class="day-checkbox">
+                                <input type="checkbox" id="unavail_venerdi" data-day="venerdi">
+                                <span class="day-name">Venerdì</span>
+                            </label>
+                        </div>
+                        <div class="day-item unavailable">
+                            <label class="day-checkbox">
+                                <input type="checkbox" id="unavail_sabato" data-day="sabato">
+                                <span class="day-name">Sabato</span>
+                            </label>
+                        </div>
+                        <div class="day-item unavailable">
+                            <label class="day-checkbox">
+                                <input type="checkbox" id="unavail_domenica" data-day="domenica">
+                                <span class="day-name">Domenica</span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="modal-footer">

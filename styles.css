@@ -985,6 +985,99 @@ body {
     font-size: var(--font-size-sm);
 }
 
+/* Days Grid Availability */
+.days-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+}
+
+.day-item {
+    background: white;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    padding: var(--space-sm);
+    transition: all var(--transition-fast);
+}
+
+.day-item:has(input:checked) {
+    border-color: var(--primary-400);
+    background: var(--primary-50);
+}
+
+.day-checkbox {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.day-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-500);
+}
+
+.day-name {
+    font-size: var(--font-size-sm);
+}
+
+.time-range {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    margin-top: var(--space-xs);
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.day-item:has(input:checked) .time-range {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.time-select {
+    flex: 1;
+    padding: var(--space-xs);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    background: white;
+}
+
+.time-range>span {
+    color: var(--gray-400);
+}
+
+/* Unavailable Days Section */
+.unavailable-section {
+    margin-top: var(--space-lg);
+}
+
+.unavailable-section label {
+    color: var(--danger);
+}
+
+.unavailable-grid .day-item.unavailable {
+    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.unavailable-grid .day-item.unavailable:has(input:checked) {
+    border-color: var(--danger);
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.unavailable-grid .day-checkbox input[type="checkbox"] {
+    accent-color: var(--danger);
+}
+
+.unavailable-grid .day-name {
+    color: var(--danger);
+}
+
 /* Preferences Section */
 .preferences-section {
     background: var(--gray-50);
