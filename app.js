@@ -1,5 +1,6 @@
 /* ========================================
    TENNIS PLAYERS DATABASE APP
+   With Firebase Realtime Database
    ======================================== */
 
 const App = {
@@ -10,6 +11,7 @@ const App = {
     currentDeleteId: null,
     filterEmpathy: 0,
     isListView: false,
+    dbRef: null,
 
     // Days mapping
     days: [
@@ -34,14 +36,76 @@ const App = {
     // INITIALIZATION
     // ========================================
     init() {
-        this.loadFromStorage();
+        // Check if Firebase is available
+        if (typeof firebase !== 'undefined' && firebase.database) {
+            this.dbRef = firebase.database().ref('players');
+            this.setupFirebaseListener();
+            console.log('🔥 Firebase mode: Database connected');
+        } else {
+            console.warn('⚠️ Firebase not available, using LocalStorage fallback');
+            this.loadFromStorage();
+        }
+
         this.bindEvents();
         this.render();
         console.log('🎾 Tennis Players Database initialized');
     },
 
     // ========================================
-    // STORAGE
+    // FIREBASE OPERATIONS
+    // ========================================
+    setupFirebaseListener() {
+        // Listen for realtime changes
+        this.dbRef.on('value', (snapshot) => {
+            this.players = [];
+            snapshot.forEach((childSnapshot) => {
+                const player = childSnapshot.val();
+                player.id = childSnapshot.key;
+                this.players.push(player);
+            });
+
+            // Sort by cognome
+            this.players.sort((a, b) => a.cognome.localeCompare(b.cognome));
+
+            this.applyFilters();
+            console.log(`📊 Loaded ${this.players.length} players from Firebase`);
+        }, (error) => {
+            console.error('Firebase error:', error);
+            this.showToast('Errore di connessione al database', 'error');
+        });
+    },
+
+    async saveToFirebase(playerData) {
+        try {
+            if (playerData.id) {
+                // Update existing
+                await this.dbRef.child(playerData.id).update(playerData);
+            } else {
+                // Create new
+                const newRef = await this.dbRef.push(playerData);
+                playerData.id = newRef.key;
+            }
+            return true;
+        } catch (error) {
+            console.error('Error saving to Firebase:', error);
+            this.showToast('Errore nel salvataggio', 'error');
+            return false;
+        }
+    },
+
+    async deleteFromFirebase(playerId) {
+        try {
+            await this.dbRef.child(playerId).remove();
+            return true;
+        } catch (error) {
+            console.error('Error deleting from Firebase:', error);
+            this.showToast('Errore nell\'eliminazione', 'error');
+            return false;
+        }
+    },
+
+    // ========================================
+    // LOCAL STORAGE (Fallback)
     // ========================================
     loadFromStorage() {
         const stored = localStorage.getItem('tennis_players');
@@ -338,7 +402,7 @@ const App = {
     // ========================================
     // CRUD OPERATIONS
     // ========================================
-    handleSubmit(e) {
+    async handleSubmit(e) {
         e.preventDefault();
 
         const empatia = parseInt(document.getElementById('empatia').value);
@@ -359,26 +423,42 @@ const App = {
             updatedAt: new Date().toISOString()
         };
 
-        if (this.currentEditId) {
-            // Update existing
-            const index = this.players.findIndex(p => p.id === this.currentEditId);
-            if (index !== -1) {
-                this.players[index] = {
-                    ...this.players[index],
-                    ...playerData
-                };
-                this.showToast('Giocatore aggiornato con successo');
+        // Use Firebase if available
+        if (this.dbRef) {
+            if (this.currentEditId) {
+                playerData.id = this.currentEditId;
+                const success = await this.saveToFirebase(playerData);
+                if (success) {
+                    this.showToast('Giocatore aggiornato con successo');
+                }
+            } else {
+                playerData.createdAt = new Date().toISOString();
+                const success = await this.saveToFirebase(playerData);
+                if (success) {
+                    this.showToast('Giocatore aggiunto con successo');
+                }
             }
         } else {
-            // Create new
-            playerData.id = this.generateId();
-            playerData.createdAt = new Date().toISOString();
-            this.players.push(playerData);
-            this.showToast('Giocatore aggiunto con successo');
+            // Fallback to LocalStorage
+            if (this.currentEditId) {
+                const index = this.players.findIndex(p => p.id === this.currentEditId);
+                if (index !== -1) {
+                    this.players[index] = {
+                        ...this.players[index],
+                        ...playerData
+                    };
+                    this.showToast('Giocatore aggiornato con successo');
+                }
+            } else {
+                playerData.id = this.generateId();
+                playerData.createdAt = new Date().toISOString();
+                this.players.push(playerData);
+                this.showToast('Giocatore aggiunto con successo');
+            }
+            this.saveToStorage();
+            this.applyFilters();
         }
 
-        this.saveToStorage();
-        this.applyFilters();
         this.closeModal();
     },
 
@@ -396,12 +476,21 @@ const App = {
         }
     },
 
-    confirmDelete() {
+    async confirmDelete() {
         if (this.currentDeleteId) {
-            this.players = this.players.filter(p => p.id !== this.currentDeleteId);
-            this.saveToStorage();
-            this.applyFilters();
-            this.showToast('Giocatore eliminato');
+            if (this.dbRef) {
+                // Delete from Firebase
+                const success = await this.deleteFromFirebase(this.currentDeleteId);
+                if (success) {
+                    this.showToast('Giocatore eliminato');
+                }
+            } else {
+                // Fallback to LocalStorage
+                this.players = this.players.filter(p => p.id !== this.currentDeleteId);
+                this.saveToStorage();
+                this.applyFilters();
+                this.showToast('Giocatore eliminato');
+            }
             this.closeDeleteModal();
         }
     },

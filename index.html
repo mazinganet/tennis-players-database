@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎾 Database Giocatori Tennis</title>
-    <meta name="description" content="Gestione database giocatori di tennis con disponibilità oraria e filtri di ricerca">
+    <meta name="description"
+        content="Gestione database giocatori di tennis con disponibilità oraria e filtri di ricerca">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <div class="app-container">
         <!-- Header -->
@@ -34,7 +37,7 @@
                     <h2>🔍 Filtri</h2>
                     <button class="btn-reset" id="btnResetFilters">Reset</button>
                 </div>
-                
+
                 <!-- Search -->
                 <div class="filter-group">
                     <label class="filter-label">Cerca giocatore</label>
@@ -169,7 +172,7 @@
             </div>
             <form class="modal-body" id="playerForm">
                 <input type="hidden" id="playerId">
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="cognome">Cognome *</label>
@@ -251,7 +254,14 @@
         <span class="toast-icon"></span>
         <span class="toast-message"></span>
     </div>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <!-- Firebase Configuration -->
+    <script src="firebase-config.js"></script>
 
     <script src="app.js"></script>
 </body>
+
 </html>
