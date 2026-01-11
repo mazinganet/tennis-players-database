@@ -279,6 +279,113 @@
             border-radius: var(--radius-full);
             font-weight: 600;
         }
+
+        /* Selected Player Box */
+        .selected-player-box {
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+            color: white;
+            display: none;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .selected-player-box.visible {
+            display: block;
+        }
+
+        .selected-player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-md);
+        }
+
+        .selected-player-header h3 {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+        }
+
+        .btn-deselect {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: var(--font-size-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .btn-deselect:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .selected-player-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-md);
+            align-items: center;
+        }
+
+        .selected-player-name {
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+        }
+
+        .selected-player-phone {
+            opacity: 0.9;
+        }
+
+        .selected-player-level {
+            background: rgba(255, 255, 255, 0.2);
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-sm);
+        }
+
+        .selected-player-hint {
+            margin-top: var(--space-md);
+            font-size: var(--font-size-sm);
+            opacity: 0.8;
+            padding-top: var(--space-sm);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Preference Indicators on Player Items */
+        .player-item.selectable {
+            cursor: pointer;
+        }
+
+        .player-item.selectable:hover {
+            background: var(--primary-100);
+            border-left: 3px solid var(--primary-500);
+        }
+
+        .preference-indicator {
+            font-size: var(--font-size-lg);
+            margin-left: auto;
+            padding-left: var(--space-sm);
+        }
+
+        .preference-indicator.preferred {
+            color: var(--success);
+        }
+
+        .preference-indicator.unwanted {
+            color: var(--danger);
+        }
+
+        .player-item.is-preferred {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 3px solid var(--success);
+        }
+
+        .player-item.is-unwanted {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 3px solid var(--danger);
+        }
     </style>
 </head>
 
@@ -318,6 +425,22 @@
                 <button class="btn btn-primary btn-search" id="btnSearch">
                     🔍 Cerca
                 </button>
+            </div>
+        </div>
+
+        <!-- Selected Player Box -->
+        <div class="selected-player-box" id="selectedPlayerBox">
+            <div class="selected-player-header">
+                <h3>👤 Giocatore Selezionato</h3>
+                <button class="btn-deselect" id="btnDeselect">✕ Deseleziona</button>
+            </div>
+            <div class="selected-player-info">
+                <span class="selected-player-name" id="selectedPlayerName"></span>
+                <span class="selected-player-phone" id="selectedPlayerPhone"></span>
+                <span class="selected-player-level" id="selectedPlayerLevel"></span>
+            </div>
+            <div class="selected-player-hint">
+                💡 I giocatori nelle liste mostrano 👍 se preferito o 👎 se indesiderato
             </div>
         </div>
 
@@ -386,6 +509,14 @@
         const SearchApp = {
             players: [],
             dbRef: null,
+            selectedPlayerId: null,
+
+            levels: {
+                principiante: 'Principiante',
+                intermedio: 'Intermedio',
+                avanzato: 'Avanzato',
+                agonista: 'Agonista'
+            },
 
             days: {
                 'lunedi': 'Lunedì',
@@ -439,6 +570,42 @@
                 document.getElementById('searchDay').addEventListener('change', () => this.performSearch());
                 document.getElementById('searchTimeStart').addEventListener('change', () => this.performSearch());
                 document.getElementById('searchTimeEnd').addEventListener('change', () => this.performSearch());
+                document.getElementById('btnDeselect').addEventListener('click', () => this.deselectPlayer());
+            },
+
+            selectPlayer(playerId) {
+                this.selectedPlayerId = playerId;
+                const player = this.players.find(p => p.id === playerId);
+
+                if (player) {
+                    document.getElementById('selectedPlayerName').textContent = `${player.cognome} ${player.nome}`;
+                    document.getElementById('selectedPlayerPhone').textContent = `📞 ${player.telefono}`;
+                    document.getElementById('selectedPlayerLevel').textContent = this.levels[player.livello] || player.livello;
+                    document.getElementById('selectedPlayerBox').classList.add('visible');
+
+                    // Re-render to show preferences
+                    this.performSearch();
+                }
+            },
+
+            deselectPlayer() {
+                this.selectedPlayerId = null;
+                document.getElementById('selectedPlayerBox').classList.remove('visible');
+                this.performSearch();
+            },
+
+            getPreferenceStatus(player) {
+                if (!this.selectedPlayerId) return null;
+
+                const selectedPlayer = this.players.find(p => p.id === this.selectedPlayerId);
+                if (!selectedPlayer) return null;
+
+                const preferred = selectedPlayer.giocatoriPreferiti || [];
+                const unwanted = selectedPlayer.giocatoriIndesiderati || [];
+
+                if (preferred.includes(player.id)) return 'preferred';
+                if (unwanted.includes(player.id)) return 'unwanted';
+                return null;
             },
 
             performSearch() {
@@ -446,7 +613,6 @@
                 const timeStart = document.getElementById('searchTimeStart').value;
                 const timeEnd = document.getElementById('searchTimeEnd').value;
 
-                // Filter players by availability
                 const results = {
                     principiante: [],
                     intermedio: [],
@@ -458,40 +624,31 @@
                     const level = player.livello;
                     if (!results[level]) return;
 
-                    // Check if player has no availability at all
                     const hasNoAvailability = !player.disponibilita || player.disponibilita.length === 0;
 
                     if (hasNoAvailability) {
-                        // Include players with no availability info
                         results[level].push({
                             ...player,
                             matchingSlots: [],
                             noAvailability: true
                         });
                     } else if (day) {
-                        // A specific day is selected
-                        // Check if player has availability for this day
                         const matchingSlots = player.disponibilita.filter(slot => {
                             if (slot.giorno !== day) return false;
-
-                            // Check time overlap
                             if (timeStart && timeEnd) {
                                 return slot.oraInizio < timeEnd && slot.oraFine > timeStart;
                             }
                             return true;
                         });
 
-                        // Check if player has NO availability indicated for this specific day
                         const hasAvailabilityForDay = player.disponibilita.some(slot => slot.giorno === day);
 
                         if (matchingSlots.length > 0) {
-                            // Player has matching slots for the day/time
                             results[level].push({
                                 ...player,
                                 matchingSlots: matchingSlots
                             });
                         } else if (!hasAvailabilityForDay) {
-                            // Player has not indicated availability for this day - include with warning
                             results[level].push({
                                 ...player,
                                 matchingSlots: [],
@@ -499,7 +656,6 @@
                             });
                         }
                     } else {
-                        // No day filter - show all players
                         const matchingSlots = player.disponibilita.filter(slot => {
                             if (timeStart && timeEnd) {
                                 return slot.oraInizio < timeEnd && slot.oraFine > timeStart;
@@ -533,10 +689,18 @@
                         list.innerHTML = '<div class="empty-box">Nessun giocatore trovato</div>';
                     } else {
                         list.innerHTML = players.map(player => this.renderPlayerItem(player, day)).join('');
+
+                        // Bind click events
+                        list.querySelectorAll('.player-item.selectable').forEach(item => {
+                            item.addEventListener('click', (e) => {
+                                if (e.target.tagName !== 'A') {
+                                    this.selectPlayer(item.dataset.id);
+                                }
+                            });
+                        });
                     }
                 });
 
-                // Update summary
                 const summary = document.getElementById('searchSummary');
                 const summaryText = document.getElementById('summaryText');
                 const summaryCount = document.getElementById('summaryCount');
@@ -568,13 +732,31 @@
                         ).join('') + '</div>';
                 }
 
+                // Check preference status
+                const prefStatus = this.getPreferenceStatus(player);
+                let prefClass = '';
+                let prefIndicator = '';
+
+                if (prefStatus === 'preferred') {
+                    prefClass = 'is-preferred';
+                    prefIndicator = '<span class="preference-indicator preferred">👍</span>';
+                } else if (prefStatus === 'unwanted') {
+                    prefClass = 'is-unwanted';
+                    prefIndicator = '<span class="preference-indicator unwanted">👎</span>';
+                }
+
+                // Don't make selected player clickable
+                const isSelected = player.id === this.selectedPlayerId;
+                const selectableClass = isSelected ? '' : 'selectable';
+
                 return `
-                    <div class="player-item">
+                    <div class="player-item ${selectableClass} ${prefClass}" data-id="${player.id}">
                         <div class="player-item-info">
                             <span class="player-item-name">${player.cognome} ${player.nome}</span>
                             <span class="player-item-phone">📞 <a href="tel:${player.telefono}">${player.telefono}</a></span>
                             ${availabilityHtml}
                         </div>
+                        ${prefIndicator}
                     </div>
                 `;
             },
