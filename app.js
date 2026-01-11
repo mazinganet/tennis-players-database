@@ -12,6 +12,10 @@ const App = {
     isListView: false,
     dbRef: null,
 
+    // Current form preference lists (temporary state while editing)
+    preferredPlayerIds: [],
+    unwantedPlayerIds: [],
+
     // Days mapping
     days: [
         { value: 'lunedi', label: 'Lunedì', short: 'Lun' },
@@ -143,6 +147,11 @@ const App = {
         return time || '--:--';
     },
 
+    getPlayerName(playerId) {
+        const player = this.players.find(p => p.id === playerId);
+        return player ? `${player.cognome} ${player.nome}` : 'Sconosciuto';
+    },
+
     showToast(message, type = 'success') {
         const toast = document.getElementById('toast');
         const toastIcon = toast.querySelector('.toast-icon');
@@ -184,6 +193,10 @@ const App = {
         // Availability
         document.getElementById('btnAddAvailability').addEventListener('click', () => this.addAvailabilitySlot());
 
+        // Player Preferences
+        document.getElementById('btnAddPreferred').addEventListener('click', () => this.addToPreferred());
+        document.getElementById('btnAddUnwanted').addEventListener('click', () => this.addToUnwanted());
+
         // Filter Events
         document.getElementById('searchInput').addEventListener('input', () => this.applyFilters());
         document.getElementById('preferenceSearch').addEventListener('input', () => this.applyFilters());
@@ -224,6 +237,109 @@ const App = {
     },
 
     // ========================================
+    // PLAYER PREFERENCES MANAGEMENT
+    // ========================================
+    populatePlayerDropdown(excludePlayerId = null) {
+        const select = document.getElementById('playerSelect');
+        select.innerHTML = '<option value="">Seleziona giocatore...</option>';
+
+        // Get all players except the one being edited and those already in lists
+        const availablePlayers = this.players.filter(p =>
+            p.id !== excludePlayerId &&
+            !this.preferredPlayerIds.includes(p.id) &&
+            !this.unwantedPlayerIds.includes(p.id)
+        );
+
+        availablePlayers.forEach(player => {
+            const option = document.createElement('option');
+            option.value = player.id;
+            option.textContent = `${player.cognome} ${player.nome}`;
+            select.appendChild(option);
+        });
+    },
+
+    addToPreferred() {
+        const select = document.getElementById('playerSelect');
+        const playerId = select.value;
+
+        if (!playerId) {
+            this.showToast('Seleziona un giocatore', 'warning');
+            return;
+        }
+
+        if (this.preferredPlayerIds.includes(playerId)) {
+            this.showToast('Giocatore già nei preferiti', 'warning');
+            return;
+        }
+
+        this.preferredPlayerIds.push(playerId);
+        this.renderPreferenceLists();
+        this.populatePlayerDropdown(this.currentEditId);
+        select.value = '';
+    },
+
+    addToUnwanted() {
+        const select = document.getElementById('playerSelect');
+        const playerId = select.value;
+
+        if (!playerId) {
+            this.showToast('Seleziona un giocatore', 'warning');
+            return;
+        }
+
+        if (this.unwantedPlayerIds.includes(playerId)) {
+            this.showToast('Giocatore già negli indesiderati', 'warning');
+            return;
+        }
+
+        this.unwantedPlayerIds.push(playerId);
+        this.renderPreferenceLists();
+        this.populatePlayerDropdown(this.currentEditId);
+        select.value = '';
+    },
+
+    removeFromPreferred(playerId) {
+        this.preferredPlayerIds = this.preferredPlayerIds.filter(id => id !== playerId);
+        this.renderPreferenceLists();
+        this.populatePlayerDropdown(this.currentEditId);
+    },
+
+    removeFromUnwanted(playerId) {
+        this.unwantedPlayerIds = this.unwantedPlayerIds.filter(id => id !== playerId);
+        this.renderPreferenceLists();
+        this.populatePlayerDropdown(this.currentEditId);
+    },
+
+    renderPreferenceLists() {
+        const preferredList = document.getElementById('preferredList');
+        const unwantedList = document.getElementById('unwantedList');
+
+        // Render preferred list
+        if (this.preferredPlayerIds.length === 0) {
+            preferredList.innerHTML = '<li class="empty-message">Nessun giocatore preferito</li>';
+        } else {
+            preferredList.innerHTML = this.preferredPlayerIds.map(id => `
+                <li>
+                    <span>${this.getPlayerName(id)}</span>
+                    <button type="button" class="btn-remove-preference" onclick="App.removeFromPreferred('${id}')" title="Rimuovi">×</button>
+                </li>
+            `).join('');
+        }
+
+        // Render unwanted list
+        if (this.unwantedPlayerIds.length === 0) {
+            unwantedList.innerHTML = '<li class="empty-message">Nessun giocatore indesiderato</li>';
+        } else {
+            unwantedList.innerHTML = this.unwantedPlayerIds.map(id => `
+                <li>
+                    <span>${this.getPlayerName(id)}</span>
+                    <button type="button" class="btn-remove-preference" onclick="App.removeFromUnwanted('${id}')" title="Rimuovi">×</button>
+                </li>
+            `).join('');
+        }
+    },
+
+    // ========================================
     // MODAL HANDLING
     // ========================================
     openModal(player = null) {
@@ -234,6 +350,10 @@ const App = {
         form.reset();
         document.getElementById('availabilityList').innerHTML = '';
 
+        // Reset preference lists
+        this.preferredPlayerIds = [];
+        this.unwantedPlayerIds = [];
+
         if (player) {
             // Edit mode
             this.currentEditId = player.id;
@@ -243,8 +363,10 @@ const App = {
             document.getElementById('nome').value = player.nome;
             document.getElementById('telefono').value = player.telefono;
             document.getElementById('livello').value = player.livello;
-            document.getElementById('giocatoriPreferiti').value = player.giocatoriPreferiti || '';
-            document.getElementById('giocatoriIndesiderati').value = player.giocatoriIndesiderati || '';
+
+            // Load preferences
+            this.preferredPlayerIds = player.giocatoriPreferiti || [];
+            this.unwantedPlayerIds = player.giocatoriIndesiderati || [];
 
             // Load availability slots
             if (player.disponibilita && player.disponibilita.length > 0) {
@@ -259,6 +381,10 @@ const App = {
             document.getElementById('playerId').value = '';
         }
 
+        // Populate dropdown and render lists
+        this.populatePlayerDropdown(this.currentEditId);
+        this.renderPreferenceLists();
+
         modal.classList.add('active');
         document.getElementById('cognome').focus();
     },
@@ -267,6 +393,8 @@ const App = {
         const modal = document.getElementById('playerModal');
         modal.classList.remove('active');
         this.currentEditId = null;
+        this.preferredPlayerIds = [];
+        this.unwantedPlayerIds = [];
     },
 
     openDeleteModal(player) {
@@ -340,8 +468,8 @@ const App = {
             nome: document.getElementById('nome').value.trim(),
             telefono: document.getElementById('telefono').value.trim(),
             livello: document.getElementById('livello').value,
-            giocatoriPreferiti: document.getElementById('giocatoriPreferiti').value.trim(),
-            giocatoriIndesiderati: document.getElementById('giocatoriIndesiderati').value.trim(),
+            giocatoriPreferiti: [...this.preferredPlayerIds],
+            giocatoriIndesiderati: [...this.unwantedPlayerIds],
             disponibilita: disponibilita,
             updatedAt: new Date().toISOString()
         };
@@ -443,11 +571,11 @@ const App = {
                 }
             }
 
-            // Preference search filter (search in preferred and unwanted players)
+            // Preference search filter (search in preferred and unwanted player names)
             if (preferenceSearch) {
-                const preferred = (player.giocatoriPreferiti || '').toLowerCase();
-                const unwanted = (player.giocatoriIndesiderati || '').toLowerCase();
-                if (!preferred.includes(preferenceSearch) && !unwanted.includes(preferenceSearch)) {
+                const preferredNames = (player.giocatoriPreferiti || []).map(id => this.getPlayerName(id).toLowerCase()).join(' ');
+                const unwantedNames = (player.giocatoriIndesiderati || []).map(id => this.getPlayerName(id).toLowerCase()).join(' ');
+                if (!preferredNames.includes(preferenceSearch) && !unwantedNames.includes(preferenceSearch)) {
                     return false;
                 }
             }
@@ -554,21 +682,26 @@ const App = {
 
         // Render player preferences
         let preferencesHtml = '';
-        if (player.giocatoriPreferiti || player.giocatoriIndesiderati) {
+        const hasPreferred = player.giocatoriPreferiti && player.giocatoriPreferiti.length > 0;
+        const hasUnwanted = player.giocatoriIndesiderati && player.giocatoriIndesiderati.length > 0;
+
+        if (hasPreferred || hasUnwanted) {
             preferencesHtml = '<div class="player-preferences">';
-            if (player.giocatoriPreferiti) {
+            if (hasPreferred) {
+                const names = player.giocatoriPreferiti.map(id => this.getPlayerName(id)).join(', ');
                 preferencesHtml += `
                     <div class="preference-item preferred">
                         <span class="icon">👍</span>
-                        <span class="names">${player.giocatoriPreferiti}</span>
+                        <span class="names">${names}</span>
                     </div>
                 `;
             }
-            if (player.giocatoriIndesiderati) {
+            if (hasUnwanted) {
+                const names = player.giocatoriIndesiderati.map(id => this.getPlayerName(id)).join(', ');
                 preferencesHtml += `
                     <div class="preference-item unwanted">
                         <span class="icon">👎</span>
-                        <span class="names">${player.giocatoriIndesiderati}</span>
+                        <span class="names">${names}</span>
                     </div>
                 `;
             }

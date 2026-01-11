@@ -195,14 +195,40 @@
                     </div>
                 </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="giocatoriPreferiti">Giocatori preferiti 👍</label>
-                        <textarea id="giocatoriPreferiti" rows="3" placeholder="Es. Marco R., Luigi B..."></textarea>
+                <!-- Player Preferences Section -->
+                <div class="form-group preferences-section">
+                    <label>Preferenze giocatori</label>
+
+                    <div class="player-selector">
+                        <select id="playerSelect" class="player-dropdown">
+                            <option value="">Seleziona giocatore...</option>
+                            <!-- Options populated dynamically -->
+                        </select>
+                        <div class="selector-buttons">
+                            <button type="button" class="btn btn-preferred" id="btnAddPreferred"
+                                title="Aggiungi ai preferiti">
+                                👍 Preferito
+                            </button>
+                            <button type="button" class="btn btn-unwanted" id="btnAddUnwanted"
+                                title="Aggiungi agli indesiderati">
+                                👎 Indesiderato
+                            </button>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="giocatoriIndesiderati">Giocatori indesiderati 👎</label>
-                        <textarea id="giocatoriIndesiderati" rows="3" placeholder="Es. Giovanni P..."></textarea>
+
+                    <div class="preferences-lists">
+                        <div class="preference-list preferred-list">
+                            <h4>👍 Preferiti</h4>
+                            <ul id="preferredList">
+                                <!-- Preferred players will be added here -->
+                            </ul>
+                        </div>
+                        <div class="preference-list unwanted-list">
+                            <h4>👎 Indesiderati</h4>
+                            <ul id="unwantedList">
+                                <!-- Unwanted players will be added here -->
+                            </ul>
+                        </div>
                     </div>
                 </div>
 
