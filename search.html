@@ -458,7 +458,7 @@
                     const level = player.livello;
                     if (!results[level]) return;
 
-                    // Check if player has no availability (include them always)
+                    // Check if player has no availability at all
                     const hasNoAvailability = !player.disponibilita || player.disponibilita.length === 0;
 
                     if (hasNoAvailability) {
@@ -468,31 +468,49 @@
                             matchingSlots: [],
                             noAvailability: true
                         });
-                    } else {
-                        // Check if any availability slot matches
+                    } else if (day) {
+                        // A specific day is selected
+                        // Check if player has availability for this day
                         const matchingSlots = player.disponibilita.filter(slot => {
-                            // If no day filter, check all days
-                            if (day && slot.giorno !== day) return false;
+                            if (slot.giorno !== day) return false;
 
                             // Check time overlap
-                            // Player is available if their slot overlaps with search range
-                            const slotStart = slot.oraInizio;
-                            const slotEnd = slot.oraFine;
-
-                            // Overlap check: slot overlaps if it starts before search ends AND ends after search starts
                             if (timeStart && timeEnd) {
-                                return slotStart < timeEnd && slotEnd > timeStart;
+                                return slot.oraInizio < timeEnd && slot.oraFine > timeStart;
                             }
-
                             return true;
                         });
 
-                        if (matchingSlots.length > 0 || !day) {
+                        // Check if player has NO availability indicated for this specific day
+                        const hasAvailabilityForDay = player.disponibilita.some(slot => slot.giorno === day);
+
+                        if (matchingSlots.length > 0) {
+                            // Player has matching slots for the day/time
                             results[level].push({
                                 ...player,
                                 matchingSlots: matchingSlots
                             });
+                        } else if (!hasAvailabilityForDay) {
+                            // Player has not indicated availability for this day - include with warning
+                            results[level].push({
+                                ...player,
+                                matchingSlots: [],
+                                noDayAvailability: true
+                            });
                         }
+                    } else {
+                        // No day filter - show all players
+                        const matchingSlots = player.disponibilita.filter(slot => {
+                            if (timeStart && timeEnd) {
+                                return slot.oraInizio < timeEnd && slot.oraFine > timeStart;
+                            }
+                            return true;
+                        });
+
+                        results[level].push({
+                            ...player,
+                            matchingSlots: matchingSlots
+                        });
                     }
                 });
 
@@ -541,6 +559,8 @@
 
                 if (player.noAvailability) {
                     availabilityHtml = '<span class="no-availability">⚠️ Nessuna disponibilità indicata</span>';
+                } else if (player.noDayAvailability) {
+                    availabilityHtml = '<span class="no-availability">📅 Non ha indicato questo giorno</span>';
                 } else if (player.matchingSlots && player.matchingSlots.length > 0) {
                     availabilityHtml = '<div class="player-item-availability">' +
                         player.matchingSlots.map(slot =>
