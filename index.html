@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎾 Database Giocatori Tennis</title>
+    <meta name="description" content="Gestione database giocatori di tennis con disponibilità oraria e filtri di ricerca">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">🎾</span>
+                    <h1>Database Giocatori</h1>
+                </div>
+                <button class="btn btn-primary" id="btnNewPlayer">
+                    <span class="btn-icon">+</span>
+                    Nuovo Giocatore
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Sidebar Filters -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <h2>🔍 Filtri</h2>
+                    <button class="btn-reset" id="btnResetFilters">Reset</button>
+                </div>
+                
+                <!-- Search -->
+                <div class="filter-group">
+                    <label class="filter-label">Cerca giocatore</label>
+                    <input type="text" class="filter-input" id="searchInput" placeholder="Nome o cognome...">
+                </div>
+
+                <!-- Level Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">Livello di gioco</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="level" value="principiante">
+                            <span class="checkbox-custom"></span>
+                            <span class="level-badge level-principiante">Principiante</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="level" value="intermedio">
+                            <span class="checkbox-custom"></span>
+                            <span class="level-badge level-intermedio">Intermedio</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="level" value="avanzato">
+                            <span class="checkbox-custom"></span>
+                            <span class="level-badge level-avanzato">Avanzato</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="level" value="agonista">
+                            <span class="checkbox-custom"></span>
+                            <span class="level-badge level-agonista">Agonista</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Empathy Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">Empatia minima</label>
+                    <div class="star-filter" id="empathyFilter">
+                        <span class="star" data-value="1">★</span>
+                        <span class="star" data-value="2">★</span>
+                        <span class="star" data-value="3">★</span>
+                        <span class="star" data-value="4">★</span>
+                        <span class="star" data-value="5">★</span>
+                    </div>
+                    <span class="filter-value" id="empathyValue">Tutti</span>
+                </div>
+
+                <!-- Day Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">Giorno disponibile</label>
+                    <div class="checkbox-group days-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="day" value="lunedi">
+                            <span class="checkbox-custom"></span>
+                            <span>Lunedì</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="day" value="martedi">
+                            <span class="checkbox-custom"></span>
+                            <span>Martedì</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="day" value="mercoledi">
+                            <span class="checkbox-custom"></span>
+                            <span>Mercoledì</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="day" value="giovedi">
+                            <span class="checkbox-custom"></span>
+                            <span>Giovedì</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="day" value="venerdi">
+                            <span class="checkbox-custom"></span>
+                            <span>Venerdì</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="day" value="sabato">
+                            <span class="checkbox-custom"></span>
+                            <span>Sabato</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="day" value="domenica">
+                            <span class="checkbox-custom"></span>
+                            <span>Domenica</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Time Range Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">Fascia oraria</label>
+                    <div class="time-range-filter">
+                        <input type="time" id="filterTimeStart" class="filter-input time-input">
+                        <span class="time-separator">—</span>
+                        <input type="time" id="filterTimeEnd" class="filter-input time-input">
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Mobile Filter Toggle -->
+            <button class="btn-filter-toggle" id="btnToggleFilters">
+                🔍 Filtri
+            </button>
+
+            <!-- Players Grid -->
+            <section class="players-section">
+                <div class="players-header">
+                    <h2>Giocatori <span class="count" id="playerCount">(0)</span></h2>
+                    <div class="view-toggle">
+                        <button class="btn-view active" id="btnGridView" title="Vista griglia">▦</button>
+                        <button class="btn-view" id="btnListView" title="Vista lista">☰</button>
+                    </div>
+                </div>
+                <div class="players-grid" id="playersGrid">
+                    <!-- Player cards will be inserted here -->
+                </div>
+                <div class="empty-state" id="emptyState">
+                    <span class="empty-icon">🎾</span>
+                    <h3>Nessun giocatore trovato</h3>
+                    <p>Aggiungi il primo giocatore o modifica i filtri di ricerca</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal: Add/Edit Player -->
+    <div class="modal-overlay" id="playerModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Nuovo Giocatore</h2>
+                <button class="btn-close" id="btnCloseModal">×</button>
+            </div>
+            <form class="modal-body" id="playerForm">
+                <input type="hidden" id="playerId">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cognome">Cognome *</label>
+                        <input type="text" id="cognome" required placeholder="Es. Rossi">
+                    </div>
+                    <div class="form-group">
+                        <label for="nome">Nome *</label>
+                        <input type="text" id="nome" required placeholder="Es. Mario">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="telefono">Telefono *</label>
+                        <input type="tel" id="telefono" required placeholder="Es. 333-1234567">
+                    </div>
+                    <div class="form-group">
+                        <label for="livello">Livello di gioco *</label>
+                        <select id="livello" required>
+                            <option value="">Seleziona...</option>
+                            <option value="principiante">Principiante</option>
+                            <option value="intermedio">Intermedio</option>
+                            <option value="avanzato">Avanzato</option>
+                            <option value="agonista">Agonista</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Livello di empatia *</label>
+                    <div class="star-rating" id="empathyRating">
+                        <span class="star" data-value="1">★</span>
+                        <span class="star" data-value="2">★</span>
+                        <span class="star" data-value="3">★</span>
+                        <span class="star" data-value="4">★</span>
+                        <span class="star" data-value="5">★</span>
+                    </div>
+                    <input type="hidden" id="empatia" value="0">
+                </div>
+
+                <div class="form-group availability-section">
+                    <label>Disponibilità oraria</label>
+                    <div class="availability-list" id="availabilityList">
+                        <!-- Availability slots will be added here -->
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-add-availability" id="btnAddAvailability">
+                        + Aggiungi disponibilità
+                    </button>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCancel">Annulla</button>
+                    <button type="submit" class="btn btn-primary" id="btnSave">Salva</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Delete Confirmation -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal modal-small">
+            <div class="modal-header">
+                <h2>Conferma eliminazione</h2>
+                <button class="btn-close" id="btnCloseDeleteModal">×</button>
+            </div>
+            <div class="modal-body">
+                <p>Sei sicuro di voler eliminare <strong id="deletePlayerName"></strong>?</p>
+                <p class="text-muted">Questa azione non può essere annullata.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelDelete">Annulla</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmDelete">Elimina</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <span class="toast-icon"></span>
+        <span class="toast-message"></span>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
