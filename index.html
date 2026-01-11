@@ -14,6 +14,139 @@
 </head>
 
 <body>
+    <!-- Login Overlay -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-box">
+            <div class="login-header">
+                <span class="login-icon">🎾</span>
+                <h2>Area Riservata</h2>
+            </div>
+            <form id="loginForm">
+                <div class="login-field">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Inserisci la password..." required autofocus>
+                </div>
+                <div class="login-error" id="loginError"></div>
+                <button type="submit" class="btn btn-primary btn-login">
+                    🔓 Accedi
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: var(--space-lg);
+        }
+
+        .login-overlay.hidden {
+            display: none;
+        }
+
+        .login-box {
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow-xl);
+            text-align: center;
+        }
+
+        .login-header {
+            margin-bottom: var(--space-xl);
+        }
+
+        .login-icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: var(--space-md);
+        }
+
+        .login-header h2 {
+            font-size: var(--font-size-xl);
+            color: var(--gray-800);
+        }
+
+        .login-field {
+            text-align: left;
+            margin-bottom: var(--space-md);
+        }
+
+        .login-field label {
+            display: block;
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            color: var(--gray-600);
+            margin-bottom: var(--space-xs);
+        }
+
+        .login-field input {
+            width: 100%;
+            padding: var(--space-md);
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-base);
+            transition: all var(--transition-fast);
+        }
+
+        .login-field input:focus {
+            outline: none;
+            border-color: var(--primary-400);
+            box-shadow: 0 0 0 3px rgba(0, 180, 161, 0.15);
+        }
+
+        .login-error {
+            color: var(--danger);
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--space-md);
+            min-height: 20px;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: var(--space-md);
+            font-size: var(--font-size-base);
+        }
+    </style>
+
+    <script>
+        // Password protection - check on page load
+        (function() {
+            const CORRECT_PASSWORD = 'tennis2024'; // Change this password
+            const AUTH_KEY = 'tennis_db_auth';
+            
+            // Check if already authenticated
+            if (sessionStorage.getItem(AUTH_KEY) === 'true') {
+                document.getElementById('loginOverlay').classList.add('hidden');
+                return;
+            }
+            
+            // Handle login form
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const password = document.getElementById('password').value;
+                const errorEl = document.getElementById('loginError');
+                
+                if (password === CORRECT_PASSWORD) {
+                    sessionStorage.setItem(AUTH_KEY, 'true');
+                    document.getElementById('loginOverlay').classList.add('hidden');
+                } else {
+                    errorEl.textContent = '❌ Password errata. Riprova.';
+                    document.getElementById('password').value = '';
+                    document.getElementById('password').focus();
+                }
+            });
+        })();
+    </script>
+
     <div class="app-container">
         <!-- Header -->
         <header class="app-header">
