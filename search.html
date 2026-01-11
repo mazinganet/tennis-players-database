@@ -633,27 +633,42 @@
                             noAvailability: true
                         });
                     } else if (day) {
-                        const matchingSlots = player.disponibilita.filter(slot => {
-                            if (slot.giorno !== day) return false;
-                            if (timeStart && timeEnd) {
-                                return slot.oraInizio < timeEnd && slot.oraFine > timeStart;
-                            }
-                            return true;
-                        });
+                        // Check if explicitly marked as unavailable
+                        const explicitUnavailable = player.giorniNonDisponibili && player.giorniNonDisponibili.includes(day);
 
-                        const hasAvailabilityForDay = player.disponibilita.some(slot => slot.giorno === day);
-
-                        if (matchingSlots.length > 0) {
-                            results[level].push({
-                                ...player,
-                                matchingSlots: matchingSlots
-                            });
-                        } else if (!hasAvailabilityForDay) {
+                        if (explicitUnavailable) {
                             results[level].push({
                                 ...player,
                                 matchingSlots: [],
-                                noDayAvailability: true
+                                markedUnavailable: true
                             });
+                        } else {
+                            const matchingSlots = player.disponibilita.filter(slot => {
+                                if (slot.giorno !== day) return false;
+                                // If filtering by time, check overlap
+                                if (timeStart && timeEnd) {
+                                    // Player slot: 18:00 - 20:00
+                                    // Search: 19:00 - 21:00
+                                    // Overlap if: slotStart < searchEnd && slotEnd > searchStart
+                                    return slot.oraInizio < timeEnd && slot.oraFine > timeStart;
+                                }
+                                return true;
+                            });
+
+                            const hasAvailabilityForDay = player.disponibilita.some(slot => slot.giorno === day);
+
+                            if (matchingSlots.length > 0) {
+                                results[level].push({
+                                    ...player,
+                                    matchingSlots: matchingSlots
+                                });
+                            } else if (!hasAvailabilityForDay) {
+                                results[level].push({
+                                    ...player,
+                                    matchingSlots: [],
+                                    noDayAvailability: true
+                                });
+                            }
                         }
                     } else {
                         const matchingSlots = player.disponibilita.filter(slot => {
@@ -721,10 +736,12 @@
             renderPlayerItem(player, filterDay) {
                 let availabilityHtml = '';
 
-                if (player.noAvailability) {
+                if (player.markedUnavailable) {
+                    availabilityHtml = '<span class="no-availability" style="color: var(--danger);">🚫 Ha indicato questo giorno come impossibile</span>';
+                } else if (player.noAvailability) {
                     availabilityHtml = '<span class="no-availability">⚠️ Nessuna disponibilità indicata</span>';
                 } else if (player.noDayAvailability) {
-                    availabilityHtml = '<span class="no-availability">📅 Non ha indicato questo giorno</span>';
+                    availabilityHtml = '<span class="no-availability">📅 Non ha indicato disponibilità per oggi</span>';
                 } else if (player.matchingSlots && player.matchingSlots.length > 0) {
                     availabilityHtml = '<div class="player-item-availability">' +
                         player.matchingSlots.map(slot =>
