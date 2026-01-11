@@ -411,6 +411,7 @@ const App = {
         const times = [];
         for (let hour = 8; hour <= 22; hour++) {
             times.push(`${hour.toString().padStart(2, '0')}:00`);
+            times.push(`${hour.toString().padStart(2, '0')}:30`);
         }
 
         // Initialize selects and bind events
@@ -485,8 +486,25 @@ const App = {
                 const startSelect = document.getElementById(`avail_${slot.giorno}_start`);
                 const endSelect = document.getElementById(`avail_${slot.giorno}_end`);
 
-                if (startSelect && slot.oraInizio) startSelect.value = slot.oraInizio;
-                if (endSelect && slot.oraFine) endSelect.value = slot.oraFine;
+                if (startSelect && slot.oraInizio) {
+                    if (![...startSelect.options].some(o => o.value === slot.oraInizio)) {
+                        const opt = document.createElement('option');
+                        opt.value = slot.oraInizio;
+                        opt.textContent = slot.oraInizio;
+                        startSelect.appendChild(opt);
+                    }
+                    startSelect.value = slot.oraInizio;
+                }
+
+                if (endSelect && slot.oraFine) {
+                    if (![...endSelect.options].some(o => o.value === slot.oraFine)) {
+                        const opt = document.createElement('option');
+                        opt.value = slot.oraFine;
+                        opt.textContent = slot.oraFine;
+                        endSelect.appendChild(opt);
+                    }
+                    endSelect.value = slot.oraFine;
+                }
 
                 if (checkbox) {
                     checkbox.checked = true;
