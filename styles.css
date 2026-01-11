@@ -1008,7 +1008,7 @@ body {
 
 .day-checkbox {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--space-xs);
     cursor: pointer;
     font-weight: 500;
@@ -1018,22 +1018,42 @@ body {
     width: 18px;
     height: 18px;
     accent-color: var(--primary-500);
+    margin-top: 2px;
+}
+
+.day-content {
+    display: flex;
+    flex-direction: column;
 }
 
 .day-name {
     font-size: var(--font-size-sm);
+    font-weight: 600;
 }
 
-.time-range {
+.day-time-label {
+    font-size: var(--font-size-xs);
+    color: var(--gray-500);
+    font-weight: 400;
+    min-height: 1.2em;
+}
+
+.day-item:has(input:checked) .day-time-label {
+    color: var(--primary-700);
+    font-weight: 500;
+}
+
+.time-range-inputs {
     display: flex;
     align-items: center;
     gap: var(--space-xs);
     margin-top: var(--space-xs);
     opacity: 0.5;
     pointer-events: none;
+    transition: opacity var(--transition-fast);
 }
 
-.day-item:has(input:checked) .time-range {
+.day-item:has(input:checked) .time-range-inputs {
     opacity: 1;
     pointer-events: auto;
 }

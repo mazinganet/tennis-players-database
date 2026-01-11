@@ -413,14 +413,57 @@ const App = {
             times.push(`${hour.toString().padStart(2, '0')}:00`);
         }
 
+        // Initialize selects and bind events
         document.querySelectorAll('.time-select').forEach(select => {
             const isStart = select.id.includes('_start');
             const defaultValue = isStart ? '08:00' : '22:00';
+            const day = select.dataset.day;
 
             select.innerHTML = times.map(time =>
                 `<option value="${time}" ${time === defaultValue ? 'selected' : ''}>${time}</option>`
             ).join('');
+
+            // On time change, update label
+            select.addEventListener('change', () => this.updateDayLabel(day));
         });
+
+        // Initialize checkboxes
+        document.querySelectorAll('#availableDaysGrid input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                this.updateDayLabel(e.target.dataset.day);
+                // Also uncheck unavailable if this is checked
+                if (e.target.checked) {
+                    const unavailCb = document.getElementById(`unavail_${e.target.dataset.day}`);
+                    if (unavailCb && unavailCb.checked) unavailCb.checked = false;
+                }
+            });
+        });
+
+        // Initialize unavailable checkboxes to uncheck available
+        document.querySelectorAll('#unavailableDaysGrid input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    const availCb = document.getElementById(`avail_${e.target.dataset.day}`);
+                    if (availCb && availCb.checked) {
+                        availCb.checked = false;
+                        this.updateDayLabel(e.target.dataset.day); // To clear label
+                    }
+                }
+            });
+        });
+    },
+
+    updateDayLabel(day) {
+        const checkbox = document.getElementById(`avail_${day}`);
+        const labelEl = document.getElementById(`label_${day}`);
+        const startEl = document.getElementById(`avail_${day}_start`);
+        const endEl = document.getElementById(`avail_${day}_end`);
+
+        if (checkbox && checkbox.checked && startEl && endEl) {
+            labelEl.textContent = `(${startEl.value} - ${endEl.value})`;
+        } else {
+            labelEl.textContent = '';
+        }
     },
 
     resetAvailabilityForm() {
@@ -430,6 +473,7 @@ const App = {
         document.querySelectorAll('#unavailableDaysGrid input[type="checkbox"]').forEach(cb => {
             cb.checked = false;
         });
+        document.querySelectorAll('.day-time-label').forEach(el => el.textContent = '');
         this.initTimeSelects();
     },
 
@@ -437,13 +481,17 @@ const App = {
         if (player.disponibilita && player.disponibilita.length > 0) {
             player.disponibilita.forEach(slot => {
                 const checkbox = document.getElementById(`avail_${slot.giorno}`);
-                if (checkbox) checkbox.checked = true;
 
                 const startSelect = document.getElementById(`avail_${slot.giorno}_start`);
                 const endSelect = document.getElementById(`avail_${slot.giorno}_end`);
 
                 if (startSelect && slot.oraInizio) startSelect.value = slot.oraInizio;
                 if (endSelect && slot.oraFine) endSelect.value = slot.oraFine;
+
+                if (checkbox) {
+                    checkbox.checked = true;
+                    this.updateDayLabel(slot.giorno);
+                }
             });
         }
 
